@@ -32,7 +32,7 @@ function handleRequest(e) {
 
     let headers = [];
     if (formName === "rsvp") {
-      headers = ["Timestamp", "Name", "Guests", "Dietary Notes"];
+      headers = ["Timestamp", "Name", "Attendance", "Guests"];
     } else if (formName === "wish") {
       headers = ["Timestamp", "Name", "Message"];
     }

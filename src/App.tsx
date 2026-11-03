@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, MapPin, Calendar, Clock } from "lucide-react";
+import { readGuestFromUrl } from "./guest";
 
 /**
  * Premium Pink & White Wedding Invitation Theme
@@ -16,7 +17,7 @@ const flowerCornerImage = "/silver_orchid_corner.png";
 const flowerArchImage = "/silver_orchid_arch.png";
 const brideGroomImage = "/WhatsApp Image 2026-10-29 at 10.21.36 (1).jpeg";
 const butterflyBackgroundImage = "/WhatsApp Image 2026-10-29 at 10.21.37 (2).jpeg";
-const heroBackgroundImage = "/WhatsApp Image 2026-10-29 at 10.21.37 (3).jpeg";
+const heroBackgroundImage = "/Gemini_Generated_Image_5flhtq5flhtq5flh.jpg";
 
 type InviteImageProps = React.ComponentProps<"img"> & {
   eager?: boolean;
@@ -207,7 +208,12 @@ function CountdownTimer() {
   );
 }
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxBD-n9k6W1Tt-B2WX8_-pJ32z_WtGU_wLV2g4XyZx9GcQLp7ojem74YTQhljTZPQy02w/exec";
+const MAX_RSVP_GUESTS = 10;
+
+type RsvpAttendance = "" | "Accepted" | "Declined";
+const emptyRsvp = (name: string) => ({ name, attendance: "" as RsvpAttendance, guests: 1 });
+
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyoD0kFwakQbeNLIhSQ83qxSMW60h_Eww6-IoAiyajllhGR_zF9HfYTOwVOqZ3g-DI/exec";
 
 export default function WeddingInvitation() {
   const [isOpened, setIsOpened] = useState(false);
@@ -215,14 +221,13 @@ export default function WeddingInvitation() {
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   // Guest Details from URL
-  const params = new URLSearchParams(window.location.search);
-  const guestPrefix = params.get('p');
-  const guestName = params.get('n');
-  const hasGuest = guestPrefix && guestName;
+  const guestName = readGuestFromUrl();
+  const hasGuest = guestName !== "";
 
-  // Form State
-  const [rsvpData, setRsvpData] = useState({ name: guestName || "", guests: "1" });
-  const [wishData, setWishData] = useState({ name: guestName || "", message: "" });
+  // Form State (name fields are pre-filled with the invited guest)
+  const [rsvpData, setRsvpData] = useState(emptyRsvp(guestName));
+  const [rsvpError, setRsvpError] = useState("");
+  const [wishData, setWishData] = useState({ name: guestName, message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<null | "rsvp_success" | "wish_success" | "error">(null);
 
@@ -242,6 +247,7 @@ export default function WeddingInvitation() {
       // Explicit mapping of keys to Sheet Headers
       const fieldMapping: Record<string, string> = {
         name: "Name",
+        attendance: "Attendance",
         guests: "Guests",
         message: "Message"
       };
@@ -263,7 +269,7 @@ export default function WeddingInvitation() {
       setSubmitStatus(`${formName}_success` as any);
 
       // Reset forms
-      if (formName === "rsvp") setRsvpData({ name: guestName || "", guests: "1" });
+      if (formName === "rsvp") setRsvpData(emptyRsvp(guestName));
       else setWishData({ name: guestName || "", message: "" });
 
     } catch (error) {
@@ -444,7 +450,7 @@ export default function WeddingInvitation() {
 
             {/* Hero Section */}
             <section 
-              className="min-h-[100dvh] w-full flex items-center justify-center p-4 md:p-12 relative overflow-hidden bg-right-bottom bg-cover"
+              className="min-h-[100dvh] w-full flex items-center justify-center p-4 md:p-12 relative overflow-hidden bg-bottom bg-cover"
               style={{ backgroundImage: `url('${heroBackgroundImage}')` }}
             >
               {/* Background texture (optional, keep for effect) */}
@@ -567,16 +573,21 @@ export default function WeddingInvitation() {
                     <span className="text-theme-500 block text-[10px] md:text-xs uppercase font-cinzel mb-4 md:mb-6 tracking-[0.5em] md:tracking-[0.6em] font-semibold drop-shadow-sm">
                       Wedding Celebration
                     </span>
-                    {hasGuest && (
-                      <span className="block text-[31px] md:text-4xl font-playball text-theme-700 mb-8 capitalize tracking-wide drop-shadow-sm">
-                        {guestPrefix.toLowerCase() === 'dear' ? `Dear ${guestName},` : `Dear ${guestPrefix} ${guestName},`}
-                      </span>
+                    {hasGuest ? (
+                      <p className="font-serif text-[21px] md:text-2xl leading-[1.8] md:leading-loose text-zinc-700 font-light italic">
+                        We cordially invite
+                        <span className="block not-italic font-playball text-[34px] md:text-5xl text-theme-700 tracking-wide drop-shadow-sm my-3 md:my-5 break-words">
+                          {guestName}
+                        </span>
+                        <span className="text-theme-700 font-medium">to celebrate our special day with us</span>
+                      </p>
+                    ) : (
+                      <p className="font-serif text-[21px] md:text-2xl leading-[1.8] md:leading-loose text-zinc-700 font-light italic">
+                        You are cordially invited to
+                        <br className="hidden md:block" />
+                        <span className="text-theme-700 font-medium block mt-2 md:mt-0 md:inline"> celebrate the union of</span>
+                      </p>
                     )}
-                    <p className="font-serif text-[21px] md:text-2xl leading-[1.8] md:leading-loose text-zinc-700 font-light italic">
-                      You are cordially invited to
-                      <br className="hidden md:block" />
-                      <span className="text-theme-700 font-medium block mt-2 md:mt-0 md:inline"> celebrate the union of</span>
-                    </p>
                   </div>
                   <div className="w-16 h-[2px] bg-gradient-to-r from-transparent via-theme-400 to-transparent mt-8 md:mt-10 shadow-[0_0_10px_rgba(192,192,192,0.3)]" />
                 </motion.div>
@@ -881,7 +892,17 @@ export default function WeddingInvitation() {
 
                   {/* Premium RSVP Form */}
                   <div className="w-full bg-white/5 backdrop-blur-md p-6 sm:p-8 md:p-12 rounded-[2rem] border border-white/10 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.5)]">
-                    <form className="space-y-8 text-left" onSubmit={(e) => { e.preventDefault(); handleSubmit("rsvp", rsvpData); }}>
+                    <form className="space-y-8 text-left" onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!rsvpData.attendance) {
+                        setRsvpError("Please let us know if you can attend.");
+                        return;
+                      }
+                      handleSubmit("rsvp", {
+                        ...rsvpData,
+                        guests: rsvpData.attendance === "Accepted" ? rsvpData.guests : 0,
+                      });
+                    }}>
                       <div className="space-y-3">
                         <label className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] font-bold text-theme-200 ml-2">Full Name</label>
                         <input
@@ -895,24 +916,72 @@ export default function WeddingInvitation() {
                       </div>
 
                       <div className="space-y-3">
-                        <label className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] font-bold text-theme-200 ml-2">Guests</label>
-                        <div className="relative">
-                          <select
-                            value={rsvpData.guests}
-                            onChange={(e) => setRsvpData({ ...rsvpData, guests: e.target.value })}
-                            className="w-full bg-transparent border-b border-white/20 px-2 py-3 text-white focus:outline-none focus:border-theme-300 transition-colors font-cinzel text-[19px] md:text-xl tracking-wide appearance-none cursor-pointer"
-                          >
-                            <option value="1" className="bg-[#18181B] text-white">1 Guest (Just Me)</option>
-                            <option value="2" className="bg-[#18181B] text-white">2 Guests</option>
-                            <option value="3" className="bg-[#18181B] text-white">3 Guests</option>
-                            <option value="4" className="bg-[#18181B] text-white">4 Guests</option>
-                            <option value="0" className="bg-[#18181B] text-theme-300">Regretfully Decline</option>
-                          </select>
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                            <div className="w-2 h-2 border-r border-b border-theme-300 rotate-45 transform -translate-y-[25%]" />
-                          </div>
+                        <label className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] font-bold text-theme-200 ml-2">Will You Attend?</label>
+                        <div className="grid grid-cols-2 gap-3 pt-1" role="radiogroup" aria-label="Will you attend?">
+                          {([
+                            { value: "Accepted", label: "Joyfully Accept" },
+                            { value: "Declined", label: "Regretfully Decline" },
+                          ] as const).map((option) => {
+                            const selected = rsvpData.attendance === option.value;
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                onClick={() => {
+                                  setRsvpData({ ...rsvpData, attendance: option.value });
+                                  setRsvpError("");
+                                }}
+                                className={`py-4 px-3 rounded-full border text-[9px] md:text-[11px] uppercase tracking-[0.2em] font-bold transition-all duration-300 ${selected
+                                  ? "bg-theme-200 text-stone-900 border-theme-200 shadow-[0_0_20px_rgba(251,207,232,0.35)]"
+                                  : "bg-transparent text-white/70 border-white/20 hover:border-theme-300 hover:text-white"
+                                  }`}
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
                         </div>
+                        {rsvpError && <p className="text-[11px] text-theme-300 ml-2 tracking-wide">{rsvpError}</p>}
                       </div>
+
+                      <AnimatePresence initial={false}>
+                        {rsvpData.attendance === "Accepted" && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.4, ease: "easeOut" }}
+                            className="space-y-3 overflow-hidden"
+                          >
+                            <label className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] font-bold text-theme-200 ml-2">Number of Guests</label>
+                            <div className="flex items-center justify-between border-b border-white/20 px-2 py-2">
+                              <button
+                                type="button"
+                                aria-label="Fewer guests"
+                                disabled={rsvpData.guests <= 1}
+                                onClick={() => setRsvpData({ ...rsvpData, guests: Math.max(1, rsvpData.guests - 1) })}
+                                className="w-10 h-10 rounded-full border border-white/20 text-xl leading-none hover:border-theme-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              >
+                                −
+                              </button>
+                              <span className="font-cinzel text-[19px] md:text-xl tracking-wide">
+                                {rsvpData.guests} {rsvpData.guests === 1 ? "Guest" : "Guests"}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label="More guests"
+                                disabled={rsvpData.guests >= MAX_RSVP_GUESTS}
+                                onClick={() => setRsvpData({ ...rsvpData, guests: Math.min(MAX_RSVP_GUESTS, rsvpData.guests + 1) })}
+                                className="w-10 h-10 rounded-full border border-white/20 text-xl leading-none hover:border-theme-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       <div className="pt-10">
                         <button
